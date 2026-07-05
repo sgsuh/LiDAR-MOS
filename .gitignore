@@ -139,3 +139,10 @@ local.properties
 
 
 bin
+
+# Toy dataset, pretrained model, and inference outputs (not tracked)
+data/model_salsanext_residual_1/
+data/sequences/
+data/predictions_salsanext_residual_1_valid/
+data/predictions_salsanext_residual_1_new/
+data/predictions_salsanext_sem_valid/
