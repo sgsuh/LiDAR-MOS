@@ -33,7 +33,15 @@ import torch.nn as nn
 from torch.nn.parameter import Parameter
 from torch.nn import functional as F
 from torch.nn.modules.conv import _ConvNd
-from torch.nn.modules.conv import _ConvTransposeMixin
+try:
+    # PyTorch <= 1.5
+    from torch.nn.modules.conv import _ConvTransposeMixin
+except ImportError:
+    # PyTorch >= 1.6 removed _ConvTransposeMixin and merged it into
+    # _ConvTransposeNd. This class is only exercised by the (optional)
+    # uncertainty model, but the import must still succeed so that the
+    # standard inference path can import this module.
+    from torch.nn.modules.conv import _ConvTransposeNd as _ConvTransposeMixin
 from torch.nn.modules.utils import _pair
 
 def resize2D(inputs, size_targets, mode="bilinear"):

@@ -1,0 +1,38 @@
+# Docker Compose for running LiDAR-MOS (SalsaNext) inference on an
+# NVIDIA GPU (tested on RTX 4070 / Ada Lovelace).
+#
+#   docker compose build          # build the image
+#   docker compose up -d          # start the container (idle)
+#   docker compose exec inference bash docker/run_infer.sh   # run inference
+#
+# All installation and execution happens *inside* this container.
+services:
+  inference:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    image: lidar-mos:cu118
+    container_name: lidar-mos
+    # Dataloader uses multiple workers; the default 64MB /dev/shm is too small
+    # and triggers "Bus error". Give it a generous shared-memory segment.
+    shm_size: "8gb"
+    stdin_open: true
+    tty: true
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    volumes:
+      # Bind-mount the whole repo so code edits and prediction outputs are
+      # visible on the host without rebuilding the image.
+      - ./:/workspace/LiDAR-MOS
+    working_dir: /workspace/LiDAR-MOS
+    # Modern GPU reservation syntax (Docker Compose v2 + nvidia-container-toolkit).
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    # Keep the container alive so we can `exec` into it repeatedly.
+    command: sleep infinity

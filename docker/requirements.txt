@@ -1,0 +1,9 @@
+# Python dependencies for LiDAR-MOS SalsaNext *inference* only.
+# torch / torchvision / numpy are already provided by the base image
+# (pytorch/pytorch:2.1.2-cuda11.8-cudnn8-runtime), so they are intentionally
+# NOT pinned here to avoid pulling a CUDA build incompatible with the RTX 4070.
+opencv-python-headless==4.9.0.80
+scipy==1.10.1
+PyYAML==6.0.1
+matplotlib==3.7.5
+Pillow>=9.5,<11
