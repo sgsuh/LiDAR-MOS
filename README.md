@@ -17,11 +17,12 @@ Complete demo video can be found in YouTube [here](https://youtu.be/NHvsYhk4dhw)
 1. [Introduction of the repo and benchmark](#LiDAR-MOS:-Moving-Object-Segmentation-in-3D-LiDAR-Data)
 2. [Publication](#Publication)
 3. [Log](#Log)
-4. [Dependencies](#Dependencies)
-5. [How to use](#How-to-use)
-6. [Applications](#Applications)
-7. [Collection of downloads](#Collection-of-downloads)
-8. [License](#License)
+4. [Docker (containerized inference & TensorRT/C++)](#Docker)
+5. [Dependencies](#Dependencies)
+6. [How to use](#How-to-use)
+7. [Applications](#Applications)
+8. [Collection of downloads](#Collection-of-downloads)
+9. [License](#License)
 
 
 ## Publication
@@ -67,6 +68,48 @@ More setups can also be found here: [#47](https://github.com/PRBonn/LiDAR-MOS/is
 
 ### v1.0
 Open-source version
+
+
+## Docker
+This fork adds a **containerized workflow** so that the SalsaNext LiDAR-MOS
+inference from this README can run entirely inside Docker, plus a full
+**PyTorch → ONNX → TensorRT → C++** deployment path. Everything (dependencies and
+execution) lives inside the containers — nothing is installed on the host.
+Tested on an NVIDIA RTX 4070 (Ada Lovelace, `sm_89`) under WSL2.
+
+Requirements on the host: Docker Engine + Docker Compose v2 + NVIDIA Container
+Toolkit. Two images are provided (built with `docker compose build`):
+
+| Service | Image | Base | Purpose |
+| --- | --- | --- | --- |
+| `inference` | `lidar-mos:cu118` | `pytorch/pytorch:2.1.2-cuda11.8` | PyTorch inference, ONNX export |
+| `trt` | `lidar-mos:trt` | `nvcr.io/nvidia/tensorrt:23.08` (TensorRT 8.6, CUDA 12.2) | TensorRT engine build, C++ inference |
+
+> The original recipe (CUDA 10.0 / PyTorch 1.5.1) cannot launch kernels on Ada
+> GPUs, so the images use PyTorch 2.1.2 / CUDA 11.8 and TensorRT 8.6 / CUDA 12.2,
+> which ship `sm_89` kernels.
+
+### PyTorch inference (SalsaNext)
+```sh
+docker compose build
+docker compose up -d
+# Inferring on the toy dataset (seq 08, valid split) -> data/predictions_salsanext_residual_1_new
+docker compose exec inference bash docker/run_infer.sh
+```
+Details and options: [docker/README.md](docker/README.md).
+
+### TensorRT + C++ inference
+Full real-time deployment path on the toy dataset:
+```sh
+docker compose exec inference python3 tools/export_onnx.py   # -> work_dir/lmnet.onnx
+docker compose exec trt       python3 tools/export_trt.py    # -> work_dir/lmnet.engine (FP16)
+docker compose exec trt       bash docker/run_cpp.sh         # build + run C++ -> data/predictions_cpp_trt
+```
+The C++ (TensorRT + PCL) reads KITTI velodyne/poses/calib, computes the range and
+residual images on the fly, runs the engine (~30 ms/frame on an RTX 4070) and
+writes KITTI `.label` predictions. Setup, the KITTI adaptation, and an accuracy
+comparison against the PyTorch pipeline are documented in
+[docker/tensorrt_cpp.md](docker/tensorrt_cpp.md).
 
 
 ## Dependencies

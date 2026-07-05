@@ -155,3 +155,6 @@ cpp/model/*.engine
 work_dir/
 *.onnx
 *.engine
+
+# Claude Code local settings
+.claude/
