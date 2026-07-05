@@ -1,11 +1,17 @@
-# Docker Compose for running LiDAR-MOS (SalsaNext) inference on an
-# NVIDIA GPU (tested on RTX 4070 / Ada Lovelace).
+# Docker Compose for LiDAR-MOS on an NVIDIA GPU (tested on RTX 4070 / Ada).
 #
-#   docker compose build          # build the image
-#   docker compose up -d          # start the container (idle)
-#   docker compose exec inference bash docker/run_infer.sh   # run inference
+# Two services:
+#   inference - PyTorch SalsaNext inference + ONNX export (image: lidar-mos:cu118)
+#   trt       - TensorRT engine build + C++ TensorRT inference (image: lidar-mos:trt)
 #
-# All installation and execution happens *inside* this container.
+#   docker compose build                                     # build both images
+#   docker compose up -d                                     # start both (idle)
+#   docker compose exec inference bash docker/run_infer.sh   # PyTorch inference
+#   docker compose exec inference python3 tools/export_onnx.py   # -> work_dir/lmnet.onnx
+#   docker compose exec trt python3 tools/export_trt.py          # -> work_dir/lmnet.engine
+#   docker compose exec trt bash docker/run_cpp.sh               # build + run C++ inference
+#
+# All installation and execution happens *inside* these containers.
 services:
   inference:
     build:
@@ -35,4 +41,28 @@ services:
               count: all
               capabilities: [gpu]
     # Keep the container alive so we can `exec` into it repeatedly.
+    command: sleep infinity
+
+  trt:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile.trt
+    image: lidar-mos:trt
+    container_name: lidar-mos-trt
+    shm_size: "8gb"
+    stdin_open: true
+    tty: true
+    environment:
+      NVIDIA_VISIBLE_DEVICES: all
+      NVIDIA_DRIVER_CAPABILITIES: compute,utility
+    volumes:
+      - ./:/workspace/LiDAR-MOS
+    working_dir: /workspace/LiDAR-MOS
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     command: sleep infinity

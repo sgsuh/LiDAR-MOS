@@ -1,0 +1,6 @@
+# Paths are relative to the repository root (run the binary from there).
+Onnx: work_dir/lmnet.onnx
+Engine: cpp/model/lmnet.engine
+WorkspaceSize: 512
+BatchSize: 1
+Precision: FP16

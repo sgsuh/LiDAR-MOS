@@ -2,7 +2,14 @@
 # This file is covered by the LICENSE file in the root of this project.
 import imp
 
-import __init__ as booger
+try:
+    # Available when run from the semantic task dir (e.g. infer.py); unused here,
+    # but importing it keeps the original inference entrypoint working. When
+    # SalsaNext is imported as a package (e.g. tools/export_onnx.py), the bare
+    # top-level `__init__` module is absent, so fall back gracefully.
+    import __init__ as booger
+except ImportError:
+    booger = None
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

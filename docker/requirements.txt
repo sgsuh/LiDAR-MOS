@@ -7,3 +7,5 @@ scipy==1.10.1
 PyYAML==6.0.1
 matplotlib==3.7.5
 Pillow>=9.5,<11
+# ONNX export (tools/export_onnx.py)
+onnx==1.16.2

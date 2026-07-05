@@ -146,3 +146,12 @@ data/sequences/
 data/predictions_salsanext_residual_1_valid/
 data/predictions_salsanext_residual_1_new/
 data/predictions_salsanext_sem_valid/
+data/predictions_cpp_trt/
+
+# TensorRT / C++ build artifacts and generated models (not tracked)
+cpp/build/
+cpp/save/
+cpp/model/*.engine
+work_dir/
+*.onnx
+*.engine

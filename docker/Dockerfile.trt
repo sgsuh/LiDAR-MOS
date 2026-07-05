@@ -1,0 +1,44 @@
+# TensorRT + C++ image for LiDAR-MOS.
+#
+# Base: NVIDIA NGC TensorRT 23.08 == TensorRT 8.6.1 + CUDA 12.1 (Ubuntu 22.04).
+# TensorRT 8.6 is the last 8.x release; the C++ code uses the 8.x runtime API
+# (getNbBindings / bindingIsInput / enqueueV2) that was removed in TensorRT 10,
+# so this tag is required. CUDA 12.1 ships sm_89 kernels for the RTX 4070.
+FROM nvcr.io/nvidia/tensorrt:23.08-py3
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# C++ build toolchain and libraries used by cpp/CMakeLists.txt:
+#   PCL, Eigen, OpenCV, yaml-cpp, OpenMP (via g++).
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        cmake \
+        build-essential \
+        libpcl-dev \
+        libeigen3-dev \
+        libopencv-dev \
+        libyaml-cpp-dev \
+        libgl1 \
+        libglib2.0-0 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Python dep for tools/export_trt.py (the `tensorrt` bindings are already in the
+# base image; onnx is needed to load/serialize the graph).
+RUN pip install --no-cache-dir onnx==1.16.2
+
+# NGC ships HPC-X OpenMPI whose mpicc wrapper reports include directories that
+# do not exist on disk. CMake's FindMPI then builds an MPI::MPI_C target with
+# non-existent include paths, which aborts PCL's transitive VTK/MPI discovery
+# during `find_package(PCL)`. Create exactly those directories (from
+# `mpicc --showme:incdirs`, stable for this pinned base tag) so CMake's
+# path-existence check passes (the empty dirs are otherwise harmless).
+ENV _OMPI_INC=/opt/hpcx/ompi/lib/x86_64-linux-gnu/openmpi/include
+RUN mkdir -p \
+        "${_OMPI_INC}" \
+        "${_OMPI_INC}/openmpi" \
+        "${_OMPI_INC}/openmpi/opal/mca/hwloc/hwloc201/hwloc/include" \
+        "${_OMPI_INC}/openmpi/opal/mca/event/libevent2022/libevent" \
+        "${_OMPI_INC}/openmpi/opal/mca/event/libevent2022/libevent/include"
+
+WORKDIR /workspace/LiDAR-MOS
+
+CMD ["bash"]

@@ -72,6 +72,10 @@ docker compose exec inference python3 -c \
 # -> True NVIDIA GeForce RTX 4070 ...
 ```
 
+## TensorRT + C++ inference
+For the full PyTorch → ONNX → TensorRT → C++ pipeline (real-time C++ inference
+on the toy dataset), see [tensorrt_cpp.md](tensorrt_cpp.md).
+
 ## Notes
 - `tensorflow` / `vispy` are not required for inference and are intentionally
   excluded from the image (they are training-logging / visualization-only
